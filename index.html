@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Trip Expense Splitter</title>
+  <!--<style>
+    body { font-family: Arial; max-width: 900px; margin: auto; }
+    input, select, button { margin: 5px; padding: 6px; }
+    .box { border: 1px solid #ccc; padding: 12px; margin-top: 12px; }
+    ul { padding-left: 20px; }
+    .small { color: gray; font-size: 13px; }
+    .error { color: red; font-size: 13px; }
+  </style>-->
+  <style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #0f172a;
+    --muted: #64748b;
+    --error: #dc2626;
+    --success: #16a34a;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 4px;
+  }
+
+  h3 {
+    margin-top: 0;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+
+  button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  button:hover {
+    background: var(--primary-dark);
+  }
+
+  .secondary-btn {
+    background: #e5e7eb;
+    color: #111827;
+  }
+
+  .secondary-btn:hover {
+    background: #d1d5db;
+  }
+
+  ul {
+    padding-left: 18px;
+  }
+
+  li {
+    margin-bottom: 6px;
+  }
+
+  .small {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .error {
+    color: var(--error);
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  .success {
+    color: var(--success);
+  }
+
+  .split-btn {
+    width: 100%;
+    font-size: 16px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+
+  pre {
+    background: #020617;
+    color: #e5e7eb;
+    padding: 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    body {
+      padding: 12px;
+    }
+  }
+</style>
+
+  <meta charset="UTF-8">
+  <title>Free Trip Expense Splitter | Split Expenses Easily</title>
+  <meta name="description"
+        content="Free online trip expense splitter to divide costs among friends. Split food, travel, drinks and more. No login, no ads.">
+  <meta name="keywords"
+       content="split expenses, trip expense splitter, split money with friends, expense split calculator, free expense splitter">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Open Graph for sharing -->
+  <meta property="og:title" content="Free Trip Expense Splitter">
+  <meta property="og:description" content="Split trip expenses easily among friends. 100% free and private.">
+  <meta property="og:type" content="website">
+</head>
+<body>
+
+<h2>Trip Expense Splitter</h2>
+<p class="subtitle">
+  Split trip expenses fairly among friends. 100% free • No login • Private
+</p>
+
+<!-- PEOPLE -->
+<div class="box">
+  <h3>Add People</h3>
+  <input id="personInput" placeholder="Enter name & press Enter">
+  <p class="small">People (<span id="personCount">0</span>): <span id="peopleList"></span></p>
+</div>
+
+<!-- EXPENSE -->
+<div class="box">
+  <h3>Add Expense</h3>
+  <input id="categoryInput" placeholder="Category (Food, Drinks)">
+  <input id="totalInput" type="number" placeholder="Total Amount">
+
+  <h4>Paid By</h4>
+  <select id="payerSelect"></select>
+  <input id="payerAmount" type="number" placeholder="Amount">
+  <button onclick="addOrUpdatePayer()">Add / Update</button>
+
+  <p class="error" id="paymentError"></p>
+  <ul id="payerList"></ul>
+
+  <button onclick="saveExpense()">Save Expense</button>
+</div>
+
+<!-- EXPENSE LIST -->
+<div class="box">
+  <h3>Expenses</h3>
+  <ul id="expenseList"></ul>
+</div>
+
+<!-- SPLIT -->
+<div class="box">
+<button class="split-btn" onclick="split()">SPLIT EXPENSES</button>
+  <pre id="output"></pre>
+</div>
+
+<script>
+  const people = [];
+  const expenses = [];
+  let tempPayments = [];
+
+  /* ---------------- PEOPLE ---------------- */
+
+  document.getElementById("personInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      const name = e.target.value.trim();
+      if (name && !people.includes(name)) {
+        people.push(name);
+        updatePeopleUI();
+      }
+      e.target.value = "";
+    }
+  });
+
+  function updatePeopleUI() {
+    peopleList.innerText = people.join(", ");
+    personCount.innerText = people.length;
+    refreshPayerDropdown();
+  }
+
+  function refreshPayerDropdown() {
+    payerSelect.innerHTML = "";
+    people.forEach(p => {
+      const used = tempPayments.some(tp => tp.person === p);
+      if (!used) {
+        payerSelect.innerHTML += `<option>${p}</option>`;
+      }
+    });
+  }
+
+  /* ---------------- PAYMENTS ---------------- */
+
+  function addOrUpdatePayer() {
+    paymentError.innerText = "";
+
+    const person = payerSelect.value;
+    const amount = Number(payerAmount.value);
+    const total = Number(totalInput.value);
+
+    if (!person || amount <= 0 || total <= 0) {
+      paymentError.innerText = "Invalid payer or amount";
+      return;
+    }
+
+    const currentPaid = tempPayments.reduce((s, p) => s + p.amount, 0);
+    if (currentPaid + amount > total) {
+      paymentError.innerText = "Paid amount exceeds total expense";
+      return;
+    }
+
+    const existing = tempPayments.find(p => p.person === person);
+    if (existing) {
+      existing.amount += amount;
+    } else {
+      tempPayments.push({ person, amount });
+    }
+
+    payerAmount.value = "";
+    renderPayers();
+    refreshPayerDropdown();
+  }
+
+  function renderPayers() {
+    payerList.innerHTML = "";
+    tempPayments.forEach(p =>
+      payerList.innerHTML += `<li>${p.person} paid ₹${p.amount}</li>`
+    );
+  }
+
+  /* ---------------- EXPENSE ---------------- */
+
+  function saveExpense() {
+    const category = categoryInput.value.trim();
+    const total = Number(totalInput.value);
+    const paidSum = tempPayments.reduce((s, p) => s + p.amount, 0);
+
+    if (!category || total <= 0 || paidSum !== total) {
+      alert("Category missing or payment mismatch");
+      return;
+    }
+
+    expenses.push({
+      category,
+      total,
+      payments: [...tempPayments]
+    });
+
+    tempPayments = [];
+    payerList.innerHTML = "";
+    categoryInput.value = "";
+    totalInput.value = "";
+    paymentError.innerText = "";
+    renderExpenses();
+    refreshPayerDropdown();
+  }
+
+  function renderExpenses() {
+    expenseList.innerHTML = "";
+    expenses.forEach(e => {
+      expenseList.innerHTML += `
+        <li>
+          <b>${e.category}</b> - ₹${e.total}
+          <ul>
+            ${e.payments.map(p => `<li>${p.person}: ₹${p.amount}</li>`).join("")}
+          </ul>
+        </li>
+      `;
+    });
+  }
+
+  /* ---------------- SPLIT ---------------- */
+
+  function split() {
+    if (people.length === 0 || expenses.length === 0) return;
+
+    const totalSpend = expenses.reduce((s, e) => s + e.total, 0);
+    const share = totalSpend / people.length;
+
+    const balance = {};
+    people.forEach(p => balance[p] = -share);
+
+    expenses.forEach(e =>
+      e.payments.forEach(p =>
+        balance[p.person] += p.amount
+      )
+    );
+
+    let result = `Total Spend: ₹${totalSpend}\n\nCategory Breakdown:\n`;
+    expenses.forEach(e =>
+      result += `${e.category}: ₹${e.total}\n`
+    );
+
+    result += `\nPer Person:\n`;
+    for (let p in balance) {
+      result += balance[p] >= 0
+        ? `${p} → GET ₹${balance[p].toFixed(2)}\n`
+        : `${p} → PAY ₹${Math.abs(balance[p]).toFixed(2)}\n`;
+    }
+
+    output.innerText = result;
+  }
+</script>
+
+</body>
+</html>
