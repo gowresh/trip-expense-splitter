@@ -8,3 +8,5 @@ A free, client-side trip expense splitter to divide costs among friends.
 - Multiple payers per expense
 - Instant split calculation
 - 100% client-side (no backend)
+
+https://gowresh.github.io/trip-expense-splitter/
